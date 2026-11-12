@@ -1,0 +1,272 @@
+body {
+    background-color: #121212;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; 
+    padding: 15px;
+}
+
+.container { 
+    max-width: 1400px; 
+    margin: 0 auto; 
+}
+
+/* HEADER CĂN GIỮA TIÊU ĐỀ */
+header { 
+    position: relative;
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    margin-bottom: 15px; 
+    border-bottom: 1px solid #333; 
+    padding-bottom: 10px; 
+}
+
+.header-center {
+    text-align: center;
+}
+
+.header-center h2 {
+    margin: 0;
+    font-size: 22px;
+    color: #ffffff;
+}
+
+.header-actions {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 8px;
+}
+
+.header-actions button {
+    width: auto;
+    margin-bottom: 0;
+}
+
+/* Đèn Báo Trạng Thái Kết Nối MQTT */
+.status-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    display: inline-block;
+    margin-top: 4px;
+}
+
+.status-badge.connected {
+    background: rgba(0, 230, 118, 0.15);
+    color: #00e676;
+    border: 1px solid #00e676;
+}
+
+.status-badge.disconnected {
+    background: rgba(255, 23, 68, 0.15);
+    color: #ff1744;
+    border: 1px solid #ff1744;
+}
+
+/* Bố cục Layout 3 Cột: Thông tin bên trái - Canvas ở giữa - Control bên phải */
+.layout { 
+    display: flex; 
+    gap: 15px; 
+    align-items: flex-start;
+}
+
+.info-section {
+    flex: 0 0 280px; /* Độ rộng cố định cho cột thông tin góc trái */
+}
+
+.preview-section {
+    flex: 1; /* Cột Preview tự giãn và đẩy canvas sang phải hợp lý */
+    display: flex;
+    flex-direction: column;
+}
+
+.control-section {
+    flex: 0 0 420px; /* Độ rộng cột bảng điều khiển bên phải */
+}
+
+.card { 
+    background: #1e1e1e; 
+    padding: 15px; 
+    border-radius: 8px; 
+    border: 1px solid #333; 
+    margin-bottom: 15px; 
+}
+
+.card h3 { 
+    margin-top: 0; 
+    font-size: 14px; 
+    color: #ff9800; 
+}
+
+/* Khung Preview Canvas LED */
+.preview-box { 
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    background: #000; 
+    overflow: auto; 
+    padding: 20px; 
+    border-radius: 8px; 
+    min-height: 200px;
+}
+
+canvas { 
+    border: 1px solid #555; 
+    cursor: crosshair; 
+    background-color: #050505;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    
+    /* BỔ SUNG CHO ĐIỆN THOẠI: Chặn cuộn trang & bôi đen khi kéo thả */
+    touch-action: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* Label Tiêu Đề Ô Nhập */
+label {
+    display: block;
+    font-size: 12px;
+    color: #bbb;
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+/* Form Input & Elements */
+input, select, button {
+    background: #2a2a2a; 
+    color: #fff; 
+    border: 1px solid #444;
+    padding: 8px 10px; 
+    border-radius: 4px; 
+    width: 100%; 
+    box-sizing: border-box; 
+    margin-bottom: 8px;
+    font-size: 13px;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+input:focus, select:focus {
+    border-color: #1976d2;
+    outline: none;
+    background-color: #333;
+}
+
+/* Tinh chỉnh Input Đặc Thù */
+input[type="color"] {
+    height: 36px;
+    padding: 2px;
+    cursor: pointer;
+}
+
+input[type="range"] {
+    padding: 0;
+    height: 25px;
+    cursor: pointer;
+}
+
+input[type="file"] {
+    padding: 5px;
+    background: #222;
+    cursor: pointer;
+}
+
+input[type="file"]::-webkit-file-upload-button {
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+/* Layout Utility Classes */
+.flex-gap { 
+    display: flex; 
+    gap: 8px; 
+    align-items: center;
+}
+.flex-gap > * {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grid-ca { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; }
+.flex-between { display: flex; justify-content: space-between; gap: 10px; }
+.style-top { margin-top: 8px; }
+
+/* Nút Bấm */
+button { 
+    cursor: pointer; 
+    font-weight: bold; 
+    border: none; 
+    transition: background 0.2s, opacity 0.2s; 
+}
+button:hover { opacity: 0.9; }
+
+.btn-primary { background: #1976d2; color: #fff; }
+.btn-success { background: #388e3c; color: #fff; }
+.btn-warning { background: #f57c00; color: #fff; }
+.btn-danger { background: #d32f2f; color: #fff; }
+.btn-power-on { background: #00c853; color: #000; }
+.btn-power-off { background: #ff1744; color: #fff; }
+
+/* Modal Popup */
+.modal { 
+    position: fixed; 
+    top: 0; left: 0; 
+    width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.85); 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    z-index: 999; 
+}
+
+.modal-content { 
+    background: #222; 
+    padding: 25px; 
+    border-radius: 8px; 
+    width: 320px; 
+    text-align: center; 
+    border: 1px solid #444; 
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .layout {
+        flex-direction: column;
+    }
+    .info-section, .preview-section, .control-section {
+        width: 100%;
+        flex: none;
+    }
+}
+
+@media (max-width: 900px) {
+    header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .header-actions {
+        position: static;
+        transform: none;
+    }
+}
+
+#btnToggleAuto {
+    width: auto !important;
+    margin-bottom: 0 !important;
+    padding: 6px 14px;
+    font-size: 12px;
+}

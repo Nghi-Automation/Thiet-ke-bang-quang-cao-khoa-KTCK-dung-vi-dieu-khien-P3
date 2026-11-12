@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Bảng LED - Khoa Kỹ Thuật Cơ Khí</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Thư viện Paho MQTT v1.1.0 cho WSS TLS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.min.js"></script>
+</head>
+<body>
+
+    <!-- Modal Đăng Nhập Ban Đầu -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h3>🔒 ĐĂNG NHẬP HỆ THỐNG</h3>
+            <input type="text" id="txtUsername" placeholder="Tên đăng nhập..." style="margin-bottom: 10px;">
+            <input type="password" id="txtPasscode" placeholder="Nhập mật khẩu...">
+            <button onclick="login()" class="btn-primary" style="margin-top: 10px;">Đăng Nhập</button>
+        </div>
+    </div>
+
+    <!-- Modal Đổi Mật Khẩu -->
+    <div id="changePassModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>🔑 ĐỔI MẬT KHẨU</h3>
+            <input type="password" id="oldPass" placeholder="Mật khẩu cũ" style="margin-bottom: 8px;">
+            <input type="password" id="newPass" placeholder="Mật khẩu mới" style="margin-bottom: 8px;">
+            <input type="password" id="confirmNewPass" placeholder="Xác nhận mật khẩu mới" style="margin-bottom: 12px;">
+            <div class="flex-gap style-top">
+                <button onclick="saveNewPassword()" class="btn-warning">Lưu</button>
+                <button onclick="closeChangePassModal()" class="btn-danger">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Màn hình giao diện điều khiển chính -->
+    <div id="mainApp" style="display:none;" class="container">
+        <!-- HEADER -->
+        <header>
+            <div class="header-center">
+                <h2>BẢNG QUANG BÁO - KHOA KỸ THUẬT CƠ KHÍ</h2>
+                <span id="mqttStatus" class="status-badge disconnected">🔴 Đang kết nối Server...</span>
+            </div>
+            <div class="header-actions">
+                <button onclick="openChangePassModal()" class="btn-warning">🔑 Đổi Mật Khẩu</button>
+                <button onclick="logout()" class="btn-danger">Đăng Xuất</button>
+            </div>
+        </header>
+
+        <div class="layout">
+            <!-- Cột 1: Thông tin Đề tài GVHD/SVTH nằm góc trái -->
+            <div class="info-section">
+                <div class="card">
+                    <h3>📋 Thông tin đề tài</h3>
+                    <p style="margin: 8px 0;"><b>GVHD:</b> TS. Nguyễn Trúc Anh</p>
+                    <p style="margin: 8px 0;"><b>GVHD:</b> ThS. Võ Thị Phương Loan</p>
+                    <p style="margin: 8px 0;"><b>SVTH:</b> Trương Thanh Nghị CNCD2211055</p>
+                    <p style="margin: 8px 0;"><b>SVTH:</b> Lương Minh Trí CNCD2211057</p>
+                </div>
+
+                <!-- Thêm Card chọn chế độ hiển thị mẫu -->
+                <div class="card style-top">
+                    <h3>🖥️ Chế Độ Hiển Thị Mẫu</h3>
+                    <div style="margin-bottom: 10px;">
+                        <label>Chọn Chế Độ:</label>
+                        <select id="selAppMode" onchange="changeAppMode()" style="width: 100%; margin-top: 5px;">
+                            <option value="custom">Mẫu Tự Do (Custom Layout)</option>
+                            <option value="fixed_info">Mẫu 1: Thông Tin Khoa</option>
+                            <option value="fixed_logo">Mẫu 2: Logo CTUT (112x112)</option>
+                            <option value="fixed_qr">Mẫu 3: Mã QR CTUT (112x112)</option>
+                        </select>
+                    </div>
+
+                    <!-- Tùy chỉnh Thông Báo Cuộn dùng chung cho các mẫu cố định -->
+                    <div id="fixedNoticeBox" style="display: none; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+                        <label>Nội Dung Thông Báo Cuộn:</label>
+                        <input type="text" id="txtFixedNotice" placeholder="Nhập thông báo cuộn bên dưới..." oninput="updateFixedNotice()" style="margin-top: 5px; margin-bottom: 8px;">
+                        
+                        <div class="grid-2">
+                            <div>
+                                <label>Màu Thông Báo:</label>
+                                <input type="color" id="colNoticeColor" value="#ffeb3b" onchange="updateFixedNotice()">
+                            </div>
+                            <div id="boxColorLogo" style="display: none;">
+                                <label>Màu Logo:</label>
+                                <input type="color" id="colLogoColor" value="#00e676" onchange="updateFixedNotice()">
+                            </div>
+                            <div id="boxColorQR" style="display: none;">
+                                <label>Màu Mã QR:</label>
+                                <input type="color" id="colQRColor" value="#ffffff" onchange="updateFixedNotice()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cột 2: Preview Canvas -->
+            <div class="preview-section">
+                <div class="card">
+                    <h3>📐 Kích Thước Bảng: 128 x 160 px</h3>
+                </div>
+
+                <div class="card preview-box">
+                    <canvas id="ledCanvas" width="128" height="160"></canvas>
+                </div>
+
+                <div class="card flex-between">
+                    <button id="btnPower" onclick="togglePower()" class="btn-power-on">🟢 ĐÃ BẬT BẢNG</button>
+                    <button onclick="sendMQTT()" class="btn-success">🚀 GỬI DỮ LIỆU XUỐNG ESP32</button>
+                </div>
+
+                <!-- Vùng điều chỉnh độ sáng bảng LED mới thêm vào -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label style="margin:0;"><b>💡 Độ Sáng Bảng LED (10 - 255):</b></label>
+                        <span id="brightnessVal" style="color: #00e676; font-weight: bold;">110</span>
+                    </div>
+                    <input type="range" id="rngBrightness" min="10" max="255" value="110" oninput="updateBrightness()">
+                </div>
+            </div>
+
+            <!-- Cột 3: Control Panel -->
+            <div class="control-section">
+                <!-- Công Cụ Chỉnh Văn Bản (Chỉ hiện khi ở Mẫu Tự Do) -->
+                <div class="card" id="cardTextEditor">
+                    <h3>✏️ Công Cụ Chỉnh Văn Bản (Mẫu Tự Do)</h3>
+                    <input type="text" id="txtText" placeholder="Nội dung văn bản (dùng {TIME} hoặc {DATE} để hiện giờ/ngày)..." oninput="updateItem()">
+                    
+                    <div class="grid-2">
+                        <div>
+                            <label>Tọa độ X:</label>
+                            <input type="number" id="txtX" value="0" onchange="updateItem()">
+                        </div>
+                        <div>
+                            <label>Tọa độ Y:</label>
+                            <input type="number" id="txtY" value="0" onchange="updateItem()">
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div>
+                            <label>Cỡ Chữ (Font Size):</label>
+                            <input type="number" id="txtSize" value="16" min="6" max="32" onchange="updateItem()">
+                        </div>
+                        <div>
+                            <label>Màu Sắc:</label>
+                            <input type="color" id="txtColor" value="#00e676" onchange="updateItem()">
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div>
+                            <label>Canh Lề:</label>
+                            <select id="selAlign" onchange="updateItem()">
+                                <option value="left">Trái (Left)</option>
+                                <option value="center">Căn Giữa (Center)</option>
+                                <option value="right">Phải (Right)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Font Chữ:</label>
+                            <select id="selFont" onchange="updateItem()">
+                                <option value="vietnamese">Tiếng Việt Unicode</option>
+                                <option value="standard">Tiêu chuẩn / Không dấu</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div>
+                            <label>Hiệu Ứng Chữ:</label>
+                            <select id="selEffect" onchange="updateItem()">
+                                <option value="static">Đứng Yên (Static)</option>
+                                <option value="marquee_left">Chạy Phải -> Trái</option>
+                                <option value="marquee_right">Chạy Trái -> Phải</option>
+                                <option value="scroll_up">Cuộn Lên (Scroll Up)</option>
+                                <option value="scroll_down">Cuộn Xuống (Scroll Down)</option>
+                                <option value="blink">Nhấp Nháy (Blink)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Tốc Độ (1-10):</label>
+                            <input type="range" id="rngSpeed" min="1" max="10" value="5" onchange="updateItem()">
+                        </div>
+                    </div>
+
+                    <div class="flex-gap style-top">
+                        <button onclick="addText()" class="btn-primary">+ Thêm Dòng Chữ</button>
+                        <button onclick="deleteSelectedItem()" class="btn-danger">Xóa Mục Chọn</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>💾 Quản Lý Giao Diện Mẫu (Presets)</h3>
+                    <div class="flex-gap">
+                        <input type="text" id="presetName" placeholder="Tên mẫu (VD: Ca Sáng)">
+                        <button onclick="savePreset()" class="btn-primary">Lưu Mẫu</button>
+                    </div>
+                    <div class="flex-gap style-top">
+                        <select id="selPreset"></select>
+                        <button onclick="loadPreset()" class="btn-success">Mở Mẫu</button>
+                        <button onclick="deletePreset()" class="btn-danger">Xóa Mẫu</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>⏰ Lập Lịch Chuyển Ca Tự Động (Client Side)</h3>
+                    
+                    <div class="flex-between style-top" style="align-items: center; background: rgba(255, 255, 255, 0.05); padding: 8px 12px; border-radius: 6px; margin-bottom: 12px;">
+                        <span><b>Trạng thái chế độ:</b></span>
+                        <button id="btnToggleAuto" onclick="toggleAutoSchedule()" class="btn-success">🟢 ĐANG BẬT TỰ ĐỘNG</button>
+                    </div>
+
+                    <div class="grid-ca">
+                        <div>
+                            <b>Ca Sáng:</b> <input type="time" id="shift1Time" value="07:00">
+                            <select id="shift1Preset" class="shift-select"></select>
+                        </div>
+                        <div>
+                            <b>Ca Chiều:</b> <input type="time" id="shift2Time" value="13:00">
+                            <select id="shift2Preset" class="shift-select"></select>
+                        </div>
+                    </div>
+                    
+                    <button onclick="saveShiftSchedule()" class="btn-primary style-top" style="width: 100%;">💾 Lưu Thiết Lập Lịch</button>
+                    <small id="shiftStatus" style="color: #00e676; display: block; margin-top: 5px;"></small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
